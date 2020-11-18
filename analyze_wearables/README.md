@@ -7,6 +7,39 @@ Datasets
 ## A public domain dataset for human activity recognition using smartphones
   - paper: Davide Anguita, Alessandro Ghio, Luca Oneto, Xavier Parra, and Jorge Luis Reyes-Ortiz. 2013. A public domain dataset for human activity recognition using smartphones.. In ESANN
   - dataset from original Activity2Vec paper
+  
+Information from this paper:
+  - A set of experiments were carried out to obtain the HAR dataset. A group of 30 volunteers with ages ranging from 19 to 48 years were selected for this task. Each person
+was instructed to follow a protocol of activities while wearing a waist-mounted Samsung Galaxy S II smartphone. The six selected ADL were standing, sitting, laying
+down, walking, walking downstairs and upstairs. Each subject performed the protocol
+twice: on the first trial the smartphone was fixed on the left side of the belt and on the
+second it was placed by the user himself as preferred. There is also a separation of 5
+seconds between each task where individuals are told to rest, this facilitated repeatability (every activity is at least tried twice) and ground trough generation through the
+visual interface.
+  - The tasks were performed in laboratory conditions but volunteers were asked to perform freely the sequence of activities for a more naturalistic dataset.
+
+Information about the dataset:
+  - The Dataset is free to download as a .zip file, having 58.2 MB, 269 MB unarchived.
+  - Link to the dataset: https://archive.ics.uci.edu/ml/machine-learning-databases/00240/
+  - The individual datasets are stored as .txt files.
+  
+  The dataset includes the following files:
+
+- 'README.txt' : Constains details about the collected data, the existing files in the archive, aditional notes and license agreement
+
+- 'features_info.txt': Shows information about the variables used on the feature vector.
+
+- 'features.txt': List of all features.
+
+- 'activity_labels.txt': Links the class labels with their activity name.
+
+- 'train/X_train.txt': Training set.
+
+- 'train/y_train.txt': Training labels.
+
+- 'test/X_test.txt': Test set.
+
+- 'test/y_test.txt': Test labels.
 
 ## PAMAP2
   - paper: Zheng, Y., Liu, Q., Chen, E., Ge, Y., Zhao, J.L., 2014. Time series classification using multi-channels deep convolutional neural networks, in: International Conference on Web-Age Information Management, Springer. pp. 298–310.
