@@ -15,9 +15,10 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from src import models
-from .trainer import BaseTrainer
+from src.trainer import BaseTrainer
 
 from typing import Dict, List, Tuple, Optional
+import os
 
 config_info = {
     'data_folder': 'Your data_har.npy folder/',
@@ -33,9 +34,9 @@ config_info = {
 def format_data_x(datafile):
     x_data = None
     for item in datafile:
-        item_data = np.loadtxt(item, dtype=np.float)
+        item_data = np.loadtxt(item, dtype=np.double)
         if x_data is None:
-            x_data = np.zeros((len(item_data), 1))
+            x_data = np.zeros((len(item_data), 1), dtype=np.double)
         x_data = np.hstack((x_data, item_data))
     x_data = x_data[:, 1:]
     print(x_data.shape)
@@ -57,8 +58,7 @@ def format_data_y(datafile):
 
 # Load data function, if there exists parsed data file, then use it
 # If not, parse the original dataset from scratch
-def load_data():
-    import os
+def load_data(data_folder):
     if os.path.isfile(config_info['data_folder'] + 'data_har.npz'):
         data = np.load(config_info['data_folder'] + 'data_har.npz')
         X_train = data['X_train']
@@ -68,7 +68,7 @@ def load_data():
     else:
         # This for processing the dataset from scratch
         # After downloading the dataset, put it to somewhere that str_folder can find
-        str_folder = '../data/UCI HAR Dataset/'
+        str_folder = data_folder
         INPUT_SIGNAL_TYPES = [
             "body_acc_x_",
             "body_acc_y_",
@@ -90,7 +90,8 @@ def load_data():
         X_test = format_data_x(str_test_files)
         Y_train = format_data_y(str_train_y)
         Y_test = format_data_y(str_test_y)
-    return X_train, onehot_to_label(Y_train), X_test, onehot_to_label(Y_test)
+    # return X_train, onehot_to_label(Y_train), X_test, onehot_to_label(Y_test)
+    return X_train, Y_train, X_test, Y_test
 
 def onehot_to_label(y_onehot):
     a = np.argwhere(y_onehot == 1)
@@ -98,8 +99,8 @@ def onehot_to_label(y_onehot):
 
 class data_loader(Dataset):
     def __init__(self, samples, labels, t):
-        self.samples = samples
-        self.labels = labels
+        self.samples = torch.from_numpy(samples).float()
+        self.labels = torch.from_numpy(labels).float()
         self.T = t
     def __getitem__(self, index):
         sample, target = self.samples[index], self.labels[index]
@@ -116,8 +117,8 @@ def normalize(x):
     x_norm = (x - x_min) / (x_max - x_min)
     return x_norm
 
-def load(batch_size=64):
-    x_train, y_train, x_test, y_test = load_data() #prints
+def load(batch_size=64, data_folder='../data/UCI_HAR_Dataset/'):
+    x_train, y_train, x_test, y_test = load_data(data_folder) #prints
     #x_train, x_test = x_train.reshape(
     #    (-1, 9, 1, 128)), x_test.reshape((-1, 9, 1, 128))
     x_train, x_test = x_train.reshape(
@@ -198,8 +199,9 @@ class HARTrainer(BaseTrainer):
         """
         #train_data, test_data = self._load_data()
         train_loader, val_loader, test_loader = load(
-             batch_size=config_info['batch_size'])
-        print(len(train_loader.dataset))
+             batch_size=config_info['batch_size'],
+            data_folder=str(self.data_folder.absolute()) + os.path.sep)
+        # print(len(train_loader.dataset))
 
         if mode == 'train':
             # assert val_size is not None, 'Val size must be defined when loading training data'
@@ -244,7 +246,7 @@ class HARTrainer(BaseTrainer):
 
 def load_har_trainer(model_path: Path) -> HARTrainer:
 
-    data_folder = model_path.resolve().parents[3]
+    data_folder = model_path.resolve().parents[2]
 
     model_dict = torch.load(model_path)
 
