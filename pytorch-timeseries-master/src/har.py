@@ -38,8 +38,9 @@ def format_data_x(datafile):
         if x_data is None:
             x_data = np.zeros((len(item_data), 1), dtype=np.double)
         x_data = np.hstack((x_data, item_data))
+    print("X_data: ", x_data.shape)
     x_data = x_data[:, 1:]
-    print(x_data.shape)
+    print(len(x_data))
     X = None
     for i in range(len(x_data)):
         row = np.asarray(x_data[i, :])
@@ -55,7 +56,8 @@ def format_data_y(datafile):
     data = np.loadtxt(datafile, dtype=np.int) - 1
     YY = np.eye(6)[data]
     return YY
-
+# Data:  (7352,)
+# Data:  (2947,)
 # Load data function, if there exists parsed data file, then use it
 # If not, parse the original dataset from scratch
 def load_data(data_folder):

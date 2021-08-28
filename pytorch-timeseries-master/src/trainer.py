@@ -41,9 +41,9 @@ class BaseTrainer:
     test_results: Dict[str, float] = {}
     input_args: Dict[str, Any] = {}
 
-    def fit(self, batch_size: int = 64, num_epochs: int = 100,
+    def fit(self, batch_size: int = 64, num_epochs: int = 20,
             val_size: float = 0.2, learning_rate: float = 0.01,
-            patience: int = 10) -> None:
+            patience: int = 100) -> None:
         """Trains the inception model
 
         Arguments
@@ -136,13 +136,13 @@ class BaseTrainer:
 
         true_np, preds_np = np.concatenate(true_list), np.concatenate(preds_list)
 
-        self.test_results['roc_auc_score'] = roc_auc_score(true_np, preds_np)
-        print(f'ROC AUC score: {round(self.test_results["roc_auc_score"], 3)}')
-
         self.test_results['accuracy_score'] = accuracy_score(
             *self._to_1d_binary(true_np, preds_np)
         )
         print(f'Accuracy score: {round(self.test_results["accuracy_score"], 3)}')
+
+        self.test_results['roc_auc_score'] = roc_auc_score(true_np, preds_np)
+        print(f'ROC AUC score: {round(self.test_results["roc_auc_score"], 3)}')
 
     @staticmethod
     def _to_1d_binary(y_true: np.ndarray, y_preds: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
