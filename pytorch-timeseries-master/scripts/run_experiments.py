@@ -45,17 +45,18 @@ def train_inception_har():
 def train_inception_opp():
     model = InceptionModel(num_blocks=1, in_channels=113, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
-                           num_pred_classes=18)
+                           num_pred_classes=17)
 
     trainer = OPPTrainer(model=model)
     trainer.fit()
 
     savepath = trainer.save_model()
+    #savepath = Path("data/models/InceptionModel/InceptionModel_model_opportunity_20_epochs.pkl")
     new_trainer = load_opp_trainer(savepath)
     new_trainer.evaluate()
 
 def train_inception_pamap():
-    model = InceptionModel(num_blocks=1, in_channels=40, out_channels=32,
+    model = InceptionModel(num_blocks=1, in_channels=1, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=18)
 
@@ -76,7 +77,7 @@ def train_inception_mhealth():
     trainer.fit()
 
     savepath = trainer.save_model()
-    #savepath = Path("data/models/InceptionModel/InceptionModel_model_pamap_20_epochs.pkl")
+    #savepath = Path("data/models/InceptionModel/InceptionModel_model_mhealth_20_epochs.pkl")
     new_trainer = load_mhealth_trainer(savepath)
     new_trainer.evaluate()
 
@@ -161,9 +162,9 @@ def train_inception_whar():
 
 
 if __name__ == '__main__':
-    #train_inception_opp()
+    train_inception_opp()
     #train_inception_har()
-    train_inception_pamap()
+    #train_inception_pamap()
     #train_inception_mhealth()
     #train_inception_wisdm()
     #train_inception_whar()

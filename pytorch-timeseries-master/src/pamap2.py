@@ -152,9 +152,9 @@ def load(batch_size=64):
     #x_train, x_test = x_train.reshape(
     #    (-1, 9, 1, 128)), x_test.reshape((-1, 9, 1, 128))
     x_train, x_val, x_test = x_train.reshape(
-         (-1, 40, 1)), x_val.reshape(
-         (-1, 40, 1)), x_test.reshape(
-         (-1, 40, 1))
+         (-1, 1, 40)), x_val.reshape(
+         (-1, 1, 40)), x_test.reshape(
+         (-1, 1, 40))
     transform = None # de aplicat encoding la y-uri
     train_set = data_loader(x_train, y_train, transform)
     val_set = data_loader(x_val, y_val, transform)

@@ -1,9 +1,3 @@
-# encoding=utf-8
-"""
-    Created on 10:38 2018/11/10
-    @author: Jindong Wang
-"""
-
 from __future__ import annotations
 from pathlib import Path
 import numpy as np
@@ -38,9 +32,7 @@ def format_data_x(datafile):
         if x_data is None:
             x_data = np.zeros((len(item_data), 1), dtype=np.double)
         x_data = np.hstack((x_data, item_data))
-    print("X_data: ", x_data.shape)
     x_data = x_data[:, 1:]
-    print(len(x_data))
     X = None
     for i in range(len(x_data)):
         row = np.asarray(x_data[i, :])
@@ -48,7 +40,6 @@ def format_data_x(datafile):
         if X is None:
             X = np.zeros((len(x_data), 128, 9))
         X[i] = row
-    print(X.shape)
     return X
 
 # This is for parsing the Y data, you can ignore it if you do not need preprocessing
@@ -127,6 +118,7 @@ def load(batch_size=64, data_folder='../data/UCI_HAR_Dataset/'):
          (-1, 9, 128)), x_test.reshape((-1, 9, 128))
     transform = None # de aplicat encoding la y-uri
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.1, random_state=1)
+    print(x_val.shape)
     train_set = data_loader(x_train, y_train, transform)
     val_set = data_loader(x_val, y_val, transform)
     test_set = data_loader(x_test, y_test, transform)

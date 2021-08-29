@@ -1,14 +1,42 @@
 from pathlib import Path
 import numpy as np
-from sklearn.metrics import roc_auc_score, accuracy_score
-
+from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, confusion_matrix
+import scikitplot as skplt
 import torch
 from torch import nn
+import seaborn as sns
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+from .labels import *
+import matplotlib
 
 from typing import cast, Any, Dict, List, Tuple, Optional
+CURRENT_DATASET = 'OPPORTUNITY'
 
+HAR_TRAIN_SIZE = 7352
+HAR_VAL_SIZE = 736
+
+wHAR_TRAIN_SIZE = 2841
+wHAR_VAL_SIZE = 944
+
+MHEALTH_TRAIN_SIZE = 247093
+MHEALTH_VAL_SIZE = 27455
+
+OPP_TRAIN_SIZE = 502166
+OPP_VAL_SIZE = 55797
+
+SMALL_SIZE = 10
+MEDIUM_SIZE = 18
+BIGGER_SIZE = 20
+
+plt.rc('font', size=MEDIUM_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 class BaseTrainer:
     """Trains an inception model. Dataset-specific trainers should extend this class
@@ -40,6 +68,7 @@ class BaseTrainer:
     val_loss: List[float] = []
     test_results: Dict[str, float] = {}
     input_args: Dict[str, Any] = {}
+    history = dict(train_loss=[], train_acc=[], val_loss=[], val_acc=[])
 
     def fit(self, batch_size: int = 64, num_epochs: int = 20,
             val_size: float = 0.2, learning_rate: float = 0.01,
@@ -61,7 +90,7 @@ class BaseTrainer:
             early stopping
         """
         train_loader, val_loader = self.get_loaders(batch_size, mode='train', val_size=val_size)
-
+        len_dataset = len(train_loader)
         optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         best_val_loss = np.inf
         patience_counter = 0
@@ -69,20 +98,32 @@ class BaseTrainer:
 
         self.model.train()
         for epoch in range(num_epochs):
+            val_corrects = 0.0
+            train_corrects = 0.0
             epoch_train_loss = []
             for x_t, y_t in train_loader:
                 optimizer.zero_grad()
                 output = self.model(x_t)
+                _, preds = torch.max(output.data, 1)
+
                 if len(y_t.shape) == 1:
                     train_loss = F.binary_cross_entropy_with_logits(
                         output, y_t.unsqueeze(-1).float(), reduction='mean'
                     )
                 else:
                     train_loss = F.cross_entropy(output, y_t.argmax(dim=-1), reduction='mean')
+                _, correct_label = torch.max(y_t.data, 1)
+                iter_corrects = torch.sum(preds == correct_label).to(torch.float32)
+                train_corrects += iter_corrects
 
                 epoch_train_loss.append(train_loss.item())
                 train_loss.backward()
                 optimizer.step()
+
+            epoch_acc_train = train_corrects / OPP_TRAIN_SIZE
+
+            print('Train accuracy: ', epoch_acc_train)
+
             self.train_loss.append(np.mean(epoch_train_loss))
 
             epoch_val_loss = []
@@ -90,6 +131,7 @@ class BaseTrainer:
             for x_v, y_v in cast(DataLoader, val_loader):
                 with torch.no_grad():
                     output = self.model(x_v)
+                    _, preds = torch.max(output.data, 1)
                     if len(y_v.shape) == 1:
                         val_loss = F.binary_cross_entropy_with_logits(
                             output, y_v.unsqueeze(-1).float(), reduction='mean'
@@ -98,11 +140,23 @@ class BaseTrainer:
                         val_loss = F.cross_entropy(output,
                                                    y_v.argmax(dim=-1), reduction='mean').item()
                     epoch_val_loss.append(val_loss)
+                    _, correct_label = torch.max(y_v.data, 1)
+                    iter_corrects = torch.sum(preds == correct_label).to(torch.float32)
+                    val_corrects += iter_corrects
             self.val_loss.append(np.mean(epoch_val_loss))
+
+            epoch_acc_val = val_corrects / OPP_VAL_SIZE
+
+            print('Validation accuracy: ', epoch_acc_val)
 
             print(f'Epoch: {epoch + 1}, '
                   f'Train loss: {round(self.train_loss[-1], 3)}, '
-                  f'Val loss: {round(self.val_loss[-1], 3)}')
+                  f'Val loss: {round(self.val_loss[-1], 3)}, ')
+
+            self.history['train_loss'].append(round(self.train_loss[-1], 3))
+            self.history['train_acc'].append(epoch_acc_train)
+            self.history['val_loss'].append(round(self.val_loss[-1], 3))
+            self.history['val_acc'].append(epoch_acc_val)
 
             if self.val_loss[-1] < best_val_loss:
                 best_val_loss = self.val_loss[-1]
@@ -116,6 +170,30 @@ class BaseTrainer:
                         self.model.load_state_dict(cast(Dict[str, torch.Tensor], best_state_dict))
                     print('Early stopping!')
                     return None
+
+    def quick_plot_con_matrix(self, y, results, labels):
+        # now print confusion metrix
+        con = confusion_matrix(y, results)
+        conf_matrix = plt.figure(figsize=(40, 33), dpi=50)
+        a = sns.heatmap(con, cmap='YlGnBu', annot=True, fmt='d', xticklabels=labels, yticklabels=labels)
+        a = plt.rcParams.update({'font.size': 20})
+        a = plt.title('Confusion Matrix')
+        a = plt.xlabel('Predicted activities')
+        a = plt.ylabel('Initial activities')
+        #plt.show()
+        conf_matrix.savefig(('confusion_matrix_' + CURRENT_DATASET + '.png'))
+
+    def quick_plot_con_matrix_normalized(self, y, results, labels):
+        # now print confusion metrix
+        con = confusion_matrix(y, results, normalize='true')
+        conf_matrix = plt.figure(figsize=(40, 33), dpi=50)
+        a = sns.heatmap(con, cmap='YlGnBu', annot=True, fmt='.3f', xticklabels=labels, yticklabels=labels)
+        a = plt.rcParams.update({'font.size': 20})
+        a = plt.title('Confusion Matrix Normalized')
+        a = plt.xlabel('Predicted activities')
+        a = plt.ylabel('Initial activities')
+        #plt.show()
+        conf_matrix.savefig(('confusion_matrix_normalized_' + CURRENT_DATASET + '.png'))
 
     def evaluate(self, batch_size: int = 64) -> None:
 
@@ -135,14 +213,43 @@ class BaseTrainer:
                 preds_list.append(preds.detach().numpy())
 
         true_np, preds_np = np.concatenate(true_list), np.concatenate(preds_list)
-
         self.test_results['accuracy_score'] = accuracy_score(
             *self._to_1d_binary(true_np, preds_np)
         )
         print(f'Accuracy score: {round(self.test_results["accuracy_score"], 3)}')
 
         self.test_results['roc_auc_score'] = roc_auc_score(true_np, preds_np)
+        self.test_results['f1_score'] = f1_score(*self._to_1d_binary(true_np, preds_np), average='weighted')
         print(f'ROC AUC score: {round(self.test_results["roc_auc_score"], 3)}')
+        print(f'F1 score: {round(self.test_results["f1_score"], 3)}')
+
+        #ACC, LOSS GRAPH
+        # error_plot = plt.figure(figsize=(12, 8))
+        # plt.plot(np.array(self.history['train_loss']), "r--", label="Train loss")
+        # plt.plot(np.array(self.history['train_acc']), "r-", label="Train acc")
+        # plt.plot(np.array(self.history['val_loss']), "b--", label="Val loss")
+        # plt.plot(np.array(self.history['val_acc']), "b-", label="Val acc")
+        #
+        # plt.title("Training session's progress over iterations")
+        # plt.legend(loc='upper right', shadow=True)
+        # plt.ylabel('Training Progress (Loss or Accuracy values)')
+        # plt.xlabel('Training Epoch')
+        # plt.ylim(0)
+        # error_plot.savefig('train_val_plot_' + CURRENT_DATASET + '.png')
+        # plt.show()
+
+        #CONFUSION MATRIX
+        max_test = np.argmax(true_np, axis=1)
+        max_predictions = np.argmax(preds_np, axis=1)
+        activity_map = load_activity_map_opportunity()
+        labels = [activity_map[x] for x in range(len(activity_map))]
+        #self.quick_plot_con_matrix_normalized(max_test, max_predictions, labels)
+        #self.quick_plot_con_matrix(max_test, max_predictions, labels)
+
+        #PLOT ROC CURVE
+        y_true, y_preds = self._to_1d_binary(true_np, preds_np)
+        skplt.metrics.plot_roc(y_true, preds_np)
+        plt.show()
 
     @staticmethod
     def _to_1d_binary(y_true: np.ndarray, y_preds: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

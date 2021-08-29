@@ -105,9 +105,9 @@ def format_data_x(X):
 
 def load_opportunity():
     X_train = np.load('../data/Opp_X_train.npy')
-    y_train = np.load('../data/Opp_y_train.npy')
+    y_train = np.load('../data/Opp_y_train.npy') - 1
     X_test = np.load('../data/Opp_X_test.npy')
-    y_test = np.load('../data/Opp_y_test.npy')
+    y_test = np.load('../data/Opp_y_test.npy') - 1
     X_train = format_data_x(X_train)
     X_test = format_data_x(X_test)
     print(X_train.shape)
@@ -141,14 +141,16 @@ class data_loader(Dataset):
 
 def load(batch_size=64):
     x_train, y_train, x_test, y_test = load_opportunity()
-    y_train = np.eye(18)[y_train]
-    y_test = np.eye(18)[y_test]
+    y_train = np.eye(17)[y_train]
+    y_test = np.eye(17)[y_test]
     #x_train, x_test = x_train.reshape(
     #    (-1, 9, 1, 128)), x_test.reshape((-1, 9, 1, 128))
     x_train, x_test = x_train.reshape(
          (-1, 113, 1)), x_test.reshape((-1, 113, 1))
     transform = None # de aplicat encoding la y-uri
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.1, random_state=1)
+    print(x_train.shape)
+    print(x_val.shape)
     train_set = data_loader(x_train, y_train, transform)
     val_set = data_loader(x_val, y_val, transform)
     test_set = data_loader(x_test, y_test, transform)
