@@ -9,6 +9,8 @@ For the Synthetic Control dataset, softmax is used instead.
 from pathlib import Path
 import sys
 import wandb
+import torch.cuda
+import torch
 import argparse
 import math
 sys.path.append('..')
@@ -18,8 +20,8 @@ from src import UCRTrainer, load_ucr_trainer, HARTrainer, load_har_trainer, OPPT
 from src.models import InceptionModel
 
 sweep_config = {
-                'method': 'bayes',
-                'metric': {'goal': 'minimize', 'name': 'loss'},
+                'method': 'random',
+                'metric': {'goal': 'maximize', 'name': 'acc'},
                 'parameters': {
                     'batch_size': {'values': [32, 64, 128, 256, 512]},
                     'lr_scheduler': {'values': ['MultiStepLR', 'StepLR', 'ExponentialLR']},
@@ -31,65 +33,86 @@ sweep_config = {
                 }
 }
 
-sweep_id = wandb.sweep(sweep_config, project="wHAR")
+sweep_id = wandb.sweep(sweep_config, project="HAR", entity="conset_adl")
 
 def train_inception_har():
+    print("Running HAR")
     data_folder = Path('../data/UCI_HAR_Dataset')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
     model = InceptionModel(num_blocks=1, in_channels=9, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=6)
-
+    model.to(device)
     trainer = HARTrainer(model=model, data_folder=data_folder)
-    trainer.fit()
+    #trainer.fit()
 
-    savepath = trainer.save_model()
-    new_trainer = load_har_trainer(savepath)
-    new_trainer.evaluate()
+    wandb.agent(sweep_id, function=trainer.fit, count=15)
+
+    #savepath = trainer.save_model()
+    #new_trainer = load_har_trainer(savepath)
+    #new_trainer.evaluate()
 
 def train_inception_opp():
+    print("Running Opportunity")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = InceptionModel(num_blocks=1, in_channels=113, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=17)
-
+    model.to(device)
     trainer = OPPTrainer(model=model)
-    trainer.fit()
+    #trainer.fit()
 
-    savepath = trainer.save_model()
+    wandb.agent(sweep_id, function=trainer.fit, count=15)
+
+    #savepath = trainer.save_model()
     #savepath = Path("data/models/InceptionModel/InceptionModel_model_opportunity_20_epochs.pkl")
-    new_trainer = load_opp_trainer(savepath)
-    new_trainer.evaluate()
+    #new_trainer = load_opp_trainer(savepath)
+    #new_trainer.evaluate()
 
 def train_inception_pamap():
+    print("Running PAMAP2")
+    print(torch.cuda.is_available())
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
     model = InceptionModel(num_blocks=1, in_channels=1, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=18)
-
+    model.to(device)
     trainer = PAMAPTrainer(model=model)
-    trainer.fit()
+    #trainer.fit()
 
-    savepath = trainer.save_model()
+    wandb.agent(sweep_id, function=trainer.fit, count=15)
+
+    #savepath = trainer.save_model()
     #savepath = Path("data/models/InceptionModel/InceptionModel_model_pamap_20_epochs.pkl")
-    new_trainer = load_pamap_trainer(savepath)
-    new_trainer.evaluate()
+    #new_trainer = load_pamap_trainer(savepath)
+    #new_trainer.evaluate()
 
 def train_inception_mhealth():
+    print("Running MHEALTH")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = InceptionModel(num_blocks=1, in_channels=23, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=12)
-
+    model.to(device)
     trainer = MHEALTHTrainer(model=model)
-    trainer.fit()
+    #trainer.fit()
 
-    savepath = trainer.save_model()
+    wandb.agent(sweep_id, function=trainer.fit, count=15)
+
+    #savepath = trainer.save_model()
     #savepath = Path("data/models/InceptionModel/InceptionModel_model_mhealth_20_epochs.pkl")
-    new_trainer = load_mhealth_trainer(savepath)
-    new_trainer.evaluate()
+    #new_trainer = load_mhealth_trainer(savepath)
+    #new_trainer.evaluate()
 
 def train_inception_wisdm():
+    print("Running WISDM")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = InceptionModel(num_blocks=1, in_channels=3, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=6)
-
+    model.to(device)
     trainer = WISDMTrainer(model=model)
     trainer.fit()
 
@@ -99,14 +122,16 @@ def train_inception_wisdm():
     new_trainer.evaluate()
 
 def train_inception_whar():
+    print("Running WHAR")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = InceptionModel(num_blocks=1, in_channels=120, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=8)
-
+    model.to(device)
     trainer = wHARTrainer(model=model)
     #trainer.fit()
 
-    wandb.agent(sweep_id, function=trainer.fit, count=10)
+    wandb.agent(sweep_id, function=trainer.fit, count=15)
 
     #savepath = trainer.save_model()
     #savepath = Path("data/models/InceptionModel/InceptionModel_model_pamap_20_epochs.pkl")
@@ -115,11 +140,11 @@ def train_inception_whar():
 
 if __name__ == '__main__':
     #train_inception_opp()
-    #train_inception_har()
+    train_inception_har()
     #train_inception_pamap()
     #train_inception_mhealth()
     #train_inception_wisdm()
-    train_inception_whar()
+    #train_inception_whar()
     # train_linear_ecg()
     # train_fcn_ecg()
     # train_resnet_ecg()

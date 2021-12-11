@@ -28,6 +28,9 @@ wHAR_VAL_SIZE = 944
 MHEALTH_TRAIN_SIZE = 247093
 MHEALTH_VAL_SIZE = 27455
 
+PAMAP_TRAIN_SIZE = 426102
+PAMAP_VAL_SIZE = 47345
+
 OPP_TRAIN_SIZE = 502166
 OPP_VAL_SIZE = 55797
 
@@ -86,7 +89,7 @@ class BaseTrainer:
 
     def fit(self, batch_size: int = 64, num_epochs: int = 20,
             val_size: float = 0.2, learning_rate: float = 0.01,
-            patience: int = 30, config = None) -> None:
+            patience: int = 20, config = None) -> None:
         """Trains the inception model
 
         Arguments
@@ -103,7 +106,7 @@ class BaseTrainer:
             Maximum number of epochs to wait without improvement before
             early stopping
         """
-        with wandb.init(project="wHAR", entity="conset_adl", config=config):
+        with wandb.init(project="MHEALTH", entity="conset_adl", config=config):
             config = wandb.config
             train_loader, val_loader = self.get_loaders(config.batch_size, mode='train', val_size=val_size)
 
@@ -138,6 +141,7 @@ class BaseTrainer:
                 train_corrects = 0.0
                 epoch_train_loss = []
                 for x_t, y_t in train_loader:
+                    #x_t, y_t = x_t.cuda(), y_t.cuda()
                     optimizer.zero_grad()
                     output = self.model(x_t)
                     _, preds = torch.max(output.data, 1)
@@ -156,7 +160,7 @@ class BaseTrainer:
                     train_loss.backward()
                     optimizer.step()
 
-                epoch_acc_train = train_corrects / wHAR_TRAIN_SIZE
+                epoch_acc_train = train_corrects / HAR_TRAIN_SIZE
 
                 #print('Train accuracy: ', epoch_acc_train)
 
@@ -165,6 +169,7 @@ class BaseTrainer:
                 epoch_val_loss = []
                 self.model.eval()
                 for x_v, y_v in cast(DataLoader, val_loader):
+                    #x_v, y_v = x_v.cuda(), y_v.cuda()
                     with torch.no_grad():
                         output = self.model(x_v)
                         _, preds = torch.max(output.data, 1)
@@ -181,9 +186,9 @@ class BaseTrainer:
                         val_corrects += iter_corrects
                 self.val_loss.append(np.mean(epoch_val_loss))
 
-                epoch_acc_val = val_corrects / wHAR_VAL_SIZE
+                epoch_acc_val = val_corrects / HAR_VAL_SIZE
 
-                wandb.log({"epoch": epoch + 1, 'loss': round(self.val_loss[-1], 3)})
+                wandb.log({"epoch": epoch + 1, 'loss': round(self.val_loss[-1], 3), 'acc': epoch_acc_val})
                 #wandb.watch(self.model)
                 #print('Validation accuracy: ', epoch_acc_val)
 
@@ -244,6 +249,7 @@ class BaseTrainer:
 
         true_list, preds_list = [], []
         for x, y in test_loader:
+            #x, y = x.cuda(), y.cuda()
             with torch.no_grad():
                 true_list.append(y.detach().numpy())
                 preds = self.model(x)

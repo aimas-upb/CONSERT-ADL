@@ -104,10 +104,10 @@ def format_data_x(X):
     return X_new
 
 def load_opportunity():
-    X_train = np.load('../data/Opp_X_train.npy')
-    y_train = np.load('../data/Opp_y_train.npy') - 1
-    X_test = np.load('../data/Opp_X_test.npy')
-    y_test = np.load('../data/Opp_y_test.npy') - 1
+    X_train = np.load('../data/Opp_X_train_reduced.npy')
+    y_train = np.load('../data/Opp_y_train_reduced.npy') - 1
+    X_test = np.load('../data/Opp_X_test_reduced.npy')
+    y_test = np.load('../data/Opp_y_test_reduced.npy') - 1
     X_train = format_data_x(X_train)
     X_test = format_data_x(X_test)
     print(X_train.shape)
@@ -141,8 +141,8 @@ class data_loader(Dataset):
 
 def load(batch_size=64):
     x_train, y_train, x_test, y_test = load_opportunity()
-    y_train = np.eye(17)[y_train]
-    y_test = np.eye(17)[y_test]
+    y_train = np.eye(16)[y_train]
+    y_test = np.eye(16)[y_test]
     #x_train, x_test = x_train.reshape(
     #    (-1, 9, 1, 128)), x_test.reshape((-1, 9, 1, 128))
     x_train, x_test = x_train.reshape(

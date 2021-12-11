@@ -20,6 +20,8 @@ config_info = {
     'batch_size': 64,
     'momemtum': 0.9
 }
+
+
 # (557963, 113)
 # (557963,)
 # (118750, 113)
@@ -103,40 +105,50 @@ def format_data_x(X):
     print(X_new.shape)
     return X_new
 
+
 def load_pamap2():
     X_train = np.load('../data/PAMAP_X_train.npy')
-    y_train = np.load('../data/PAMAP_Y_train.npy') - 1
-    X_val = np.load('../data/PAMAP_X_val.npy')
-    y_val = np.load('../data/PAMAP_Y_val.npy') - 1
+    y_train = np.load('../data/PAMAP_Y_train.npy')
+    # X_val = np.load('../data/PAMAP_X_val.npy')
+    # y_val = np.load('../data/PAMAP_Y_val.npy') - 1
     X_test = np.load('../data/PAMAP_X_test.npy')
-    y_test = np.load('../data/PAMAP_Y_test.npy') - 1
+    y_test = np.load('../data/PAMAP_Y_test.npy')
+    print("Y train max", y_train.max())
+    print("Y test max", y_test.max())
+    print("Unique values:", np.unique(y_train))
+    print("Unique values:", np.unique(y_test))
     X_train = format_data_x(X_train)
-    X_val = format_data_x(X_val)
+    # X_val = format_data_x(X_val)
     X_test = format_data_x(X_test)
     print(X_train.shape)
     print(y_train.shape)
-    print(X_val.shape)
-    print(y_val.shape)
+    # print(X_val.shape)
+    # print(y_val.shape)
     print(X_test.shape)
     print(y_test.shape)
-    return X_train, y_train, X_val, y_val, X_test, y_test
+    return X_train, y_train, X_test, y_test
+
 
 if __name__ == '__main__':
     load_pamap2()
+
 
 class data_loader(Dataset):
     def __init__(self, samples, labels, t):
         self.samples = torch.from_numpy(samples).float()
         self.labels = torch.from_numpy(labels).float()
         self.T = t
+
     def __getitem__(self, index):
         sample, target = self.samples[index], self.labels[index]
         if self.T:
             return self.T(sample), target
         else:
             return sample, target
+
     def __len__(self):
         return len(self.samples)
+
 
 # def normalize(x):
 #     x_min = x.min(axis=(0, 2, 3), keepdims=True)
@@ -145,17 +157,17 @@ class data_loader(Dataset):
 #     return x_norm
 
 def load(batch_size=64):
-    x_train, y_train, x_val, y_val, x_test, y_test = load_pamap2()
-    y_train = np.eye(18)[y_train]
-    y_val = np.eye(18)[y_val]
-    y_test = np.eye(18)[y_test]
-    #x_train, x_test = x_train.reshape(
+    x_train, y_train, x_test, y_test = load_pamap2()
+    # x_train, x_test = x_train.reshape(
+    #      (-1, 40, 1)), x_test.reshape((-1, 40, 1))
+    y_train = np.eye(12)[y_train]
+    y_test = np.eye(12)[y_test]
+    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.1, random_state=1)
+    # x_train, x_test = x_train.reshape(
     #    (-1, 9, 1, 128)), x_test.reshape((-1, 9, 1, 128))
-    x_train, x_val, x_test = x_train.reshape(
-         (-1, 1, 40)), x_val.reshape(
-         (-1, 1, 40)), x_test.reshape(
-         (-1, 1, 40))
-    transform = None # de aplicat encoding la y-uri
+    print("X TRAIN SHAPE IS: ", x_train.shape)
+    print("X VAL SHAPE IS:", x_val.shape)
+    transform = None  # de aplicat encoding la y-uri
     train_set = data_loader(x_train, y_train, transform)
     val_set = data_loader(x_val, y_val, transform)
     test_set = data_loader(x_test, y_test, transform)
@@ -165,6 +177,7 @@ def load(batch_size=64):
         val_set, batch_size=batch_size, shuffle=True, drop_last=True)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
     return train_loader, val_loader, test_loader
+
 
 # if __name__ == '__main__':
 #     train_loader, val_loader, test_loader = load(
@@ -228,9 +241,9 @@ class PAMAPTrainer(BaseTrainer):
         Tuple of (train_loader, val_loader) if mode == 'train'
         Tuple of (test_loader, None) if mode == 'test'
         """
-        #train_data, test_data = self._load_data()
+        # train_data, test_data = self._load_data()
         train_loader, val_loader, test_loader = load(
-             batch_size=config_info['batch_size'])
+            batch_size=config_info['batch_size'])
         # print(len(train_loader.dataset))
 
         if mode == 'train':
@@ -275,7 +288,6 @@ class PAMAPTrainer(BaseTrainer):
 
 
 def load_pamap_trainer(model_path: Path) -> PAMAPTrainer:
-
     model_dict = torch.load(model_path)
 
     model_class = getattr(models, model_dict['model']['model_class'])
