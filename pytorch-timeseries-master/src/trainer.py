@@ -89,7 +89,7 @@ class BaseTrainer:
 
     def fit(self, batch_size: int = 64, num_epochs: int = 20,
             val_size: float = 0.2, learning_rate: float = 0.01,
-            patience: int = 20, config = None) -> None:
+            patience: int = 40, config = None) -> None:
         """Trains the inception model
 
         Arguments

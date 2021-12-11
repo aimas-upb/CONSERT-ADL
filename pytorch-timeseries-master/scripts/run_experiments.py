@@ -20,10 +20,10 @@ from src import UCRTrainer, load_ucr_trainer, HARTrainer, load_har_trainer, OPPT
 from src.models import InceptionModel
 
 sweep_config = {
-                'method': 'random',
+                'method': 'grid',
                 'metric': {'goal': 'maximize', 'name': 'acc'},
                 'parameters': {
-                    'batch_size': {'values': [32, 64, 128, 256, 512]},
+                    'batch_size': {'values': [32, 64, 128, 256]},
                     'lr_scheduler': {'values': ['MultiStepLR', 'StepLR', 'ExponentialLR']},
                     'epochs': {'values': [20, 50 ,100]},
                     'weight_decay': {'values': [0.9, 0.99, 0.5]},
@@ -47,7 +47,7 @@ def train_inception_har():
     trainer = HARTrainer(model=model, data_folder=data_folder)
     #trainer.fit()
 
-    wandb.agent(sweep_id, function=trainer.fit, count=15)
+    wandb.agent(sweep_id, function=trainer.fit, count=648)
 
     #savepath = trainer.save_model()
     #new_trainer = load_har_trainer(savepath)
