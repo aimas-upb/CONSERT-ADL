@@ -43,6 +43,7 @@ def train_inception_har():
     model = InceptionModel(num_blocks=1, in_channels=9, out_channels=32,
                            bottleneck_channels=2, kernel_sizes=20, use_residuals=True,
                            num_pred_classes=6)
+    model.s
     model.to(device)
     trainer = HARTrainer(model=model, data_folder=data_folder)
     #trainer.fit()

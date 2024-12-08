@@ -130,7 +130,9 @@ class BaseTrainer:
             best_val_loss = np.inf
             patience_counter = 0
             best_state_dict = None
-
+            
+            # model re-init by loading default initial state_dict
+            
             self.model.train()
             print('Learning rate: ', config.learning_rate)
             print('Optimizer: ', config.optimizer)

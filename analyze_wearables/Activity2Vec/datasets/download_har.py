@@ -26,3 +26,7 @@ def download():
         print("Extracting successfully done to {}.".format(extract_directory))
     else:
         print("Dataset already extracted. Did not extract twice.\n")
+
+
+if __name__=="__main__":
+    download()
